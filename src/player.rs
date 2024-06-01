@@ -1,12 +1,12 @@
-use bevy::{input::keyboard, prelude::*, transform};
+use bevy::prelude::*;
 
 use crate::{
     asset_loader::SceneAssets, moviment::{Acceleration, MovingObjectBundle, Velocity}, schedule::InGameSet
 };
 
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-const STARTING_VELOCITY: Vec3 = Vec3::new(0.0, 0.0, 0.5);
-const PLAYER_SPEED: f32 = 10.0;
+const STARTING_VELOCITY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+const PLAYER_SPEED: f32 = 4.0;
 const PLAYER_ROTATION_SPEED: f32 = 6.0;
 
 #[derive(Component, Debug)]
@@ -19,9 +19,10 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, spawn_player);
-            // .add_systems(Update, (player_movement_controls, player_spel_controls).chain().in_set(InGameSet::UserInput));
-            // .add_systems(Update, sync_player_camera);
+        app.add_systems(PostStartup, spawn_player)
+            .add_systems(Update, (player_movement_controls, player_spel_controls).chain().in_set(InGameSet::UserInput))
+            // .add_systems(Update, sync_player_camera)
+        ;
     }
 }
 
@@ -38,6 +39,40 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
         },
         Player,
     ));
+}
+
+fn player_movement_controls(
+    keys: Res<Input<KeyCode>>,
+    time: Res<Time>,
+    mut player: Query<&mut Transform, With<Player>>,
+    cam: Query<&Transform, (With<Camera>, Without<Player>)>
+) {
+    let Ok(mut player_transform) = player.get_single_mut() else { return };
+    let Ok(cam_transform) = cam.get_single() else { return };
+
+    let mut direction = Vec3::ZERO;
+
+    //forward
+    if keys.pressed(KeyCode::W) {
+        direction += cam_transform.forward();
+    }
+
+    if keys.pressed(KeyCode::S) {
+        direction += cam_transform.back();
+    }
+
+    if keys.pressed(KeyCode::A) {
+        direction += cam_transform.left();
+    }
+
+    if keys.pressed(KeyCode::D) {
+        direction += cam_transform.right();
+    }
+
+    direction.y = 0.0;
+
+    let moviment = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_seconds();
+    player_transform.translation += moviment;
 }
 
 // fn player_movement_controls(
