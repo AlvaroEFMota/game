@@ -1,27 +1,51 @@
-use bevy::prelude::*;
+use crate::player::Player;
 use bevy::input::mouse::MouseMotion;
+use bevy::prelude::*;
 
 const CAMERA_DISTANCE: f32 = 20.0;
 use std::f32::consts::PI;
 
 #[derive(Component, Debug)]
 pub struct Camera;
+
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_camera);
-        // .add_systems(Update, camera_controller);
+        app.add_systems(Startup, spawn_camera)
+            // .add_systems(Update, camera_controller);
+            .add_systems(Update, orbital_camera);
     }
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_xyz(0.0, CAMERA_DISTANCE / 10.0, CAMERA_DISTANCE)
-            .looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    }, Camera));
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, CAMERA_DISTANCE / 10.0, CAMERA_DISTANCE)
+                .looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+        Camera,
+    ));
 }
+
+fn orbital_camera(
+    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    match (player_query.get_single(), camera_query.get_single_mut()) {
+        (Ok(player_tansform), Ok(mut camera_transform)) => {
+            *camera_transform = Transform::from_translation(
+                player_tansform.translation
+                    + player_tansform.back().normalize() * CAMERA_DISTANCE * -1.0
+                    + Vec3::new(0.0, 5.0, 0.0),
+            )
+            .looking_at(player_tansform.translation, Vec3::Y);
+        }
+        _ => {}
+    }
+}
+
 // fn spawn_camera(mut commands: Commands) {
 //     commands.spawn((Camera3dBundle {
 //         transform: Transform::from_xyz(0.0, CAMERA_DISTANCE / 10.0, CAMERA_DISTANCE)
@@ -70,7 +94,6 @@ fn spawn_camera(mut commands: Commands) {
 //         }
 //     }
 // }
-
 
 // fn camera_controller(
 //     time: Res<Time>,
@@ -142,4 +165,3 @@ fn spawn_camera(mut commands: Commands) {
 //         }
 //     }
 // }
-

@@ -1,13 +1,15 @@
 use bevy::prelude::*;
 
 use crate::{
-    asset_loader::SceneAssets, moviment::{Acceleration, MovingObjectBundle, Velocity}, schedule::InGameSet
+    asset_loader::SceneAssets,
+    moviment::{Acceleration, MovingObjectBundle, Velocity},
+    schedule::InGameSet,
 };
 
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 const STARTING_VELOCITY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-const PLAYER_SPEED: f32 = 4.0;
-const PLAYER_ROTATION_SPEED: f32 = 6.0;
+const PLAYER_SPEED: f32 = 8.0;
+const PLAYER_ROTATION_SPEED: f32 = 4.0;
 
 #[derive(Component, Debug)]
 pub struct Player;
@@ -45,10 +47,15 @@ fn player_movement_controls(
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
     mut player: Query<&mut Transform, With<Player>>,
-    cam: Query<&Transform, (With<Camera>, Without<Player>)>
+    cam: Query<&Transform, (With<Camera>, Without<Player>)>,
 ) {
-    let Ok(mut player_transform) = player.get_single_mut() else { return };
-    let Ok(cam_transform) = cam.get_single() else { return };
+    let mut rotation = 0.0;
+    let Ok(mut player_transform) = player.get_single_mut() else {
+        return;
+    };
+    let Ok(cam_transform) = cam.get_single() else {
+        return;
+    };
 
     let mut direction = Vec3::ZERO;
 
@@ -69,8 +76,15 @@ fn player_movement_controls(
         direction += cam_transform.right();
     }
 
+    if keys.pressed(KeyCode::Left) {
+        rotation = PLAYER_ROTATION_SPEED * time.delta_seconds();
+    } else if keys.pressed(KeyCode::Right) {
+        rotation = -PLAYER_ROTATION_SPEED * time.delta_seconds();
+    }
+
     direction.y = 0.0;
 
+    player_transform.rotate_y(rotation);
     let moviment = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_seconds();
     player_transform.translation += moviment;
 }
@@ -102,33 +116,42 @@ fn player_movement_controls(
 //     } else if keyboard_input.pressed(KeyCode::D) {
 //         y_movement = -PLAYER_SPEED;
 //     }
-    
+
 //     if keyboard_input.pressed(KeyCode::Left) {
 //         rotation = PLAYER_ROTATION_SPEED * time.delta_seconds();
 //     } else if keyboard_input.pressed(KeyCode::Right) {
 //         rotation = -PLAYER_ROTATION_SPEED * time.delta_seconds();
 //     }
 
-
 //     transform.rotate_y(rotation);
 //     velocity.value = -transform.forward() * x_movement + transform.right() * y_movement;
 // }
 
-fn player_spel_controls(mut command: Commands, query: Query<&mut Transform, With<Player>>, keyboard_input: Res<Input<KeyCode>>, scene_assets: Res<SceneAssets>) {
+fn player_spel_controls(
+    mut command: Commands,
+    query: Query<&mut Transform, With<Player>>,
+    keyboard_input: Res<Input<KeyCode>>,
+    scene_assets: Res<SceneAssets>,
+) {
     let Ok(transform) = query.get_single() else {
         return;
     };
 
     if keyboard_input.pressed(KeyCode::Space) {
-        command.spawn((MovingObjectBundle {
-            velocity: Velocity::new(-transform.forward()*40.0),
-            acceleration: Acceleration::new(Vec3::ZERO),
-            model: SceneBundle {
-                scene: scene_assets.spel.clone(),
-                transform: Transform::from_translation(transform.translation + Vec3::new(0.0, 0.0, -5.0)),
-                ..default()
+        command.spawn((
+            MovingObjectBundle {
+                velocity: Velocity::new(-transform.forward() * 40.0),
+                acceleration: Acceleration::new(Vec3::ZERO),
+                model: SceneBundle {
+                    scene: scene_assets.spel.clone(),
+                    transform: Transform::from_translation(
+                        transform.translation + Vec3::new(0.0, 0.0, -5.0),
+                    ),
+                    ..default()
+                },
             },
-        }, PlayerSpel));
+            PlayerSpel,
+        ));
     }
 }
 
@@ -141,3 +164,4 @@ fn player_spel_controls(mut command: Commands, query: Query<&mut Transform, With
 
 //     *camera_transform = player_transform.clone();
 // }
+
