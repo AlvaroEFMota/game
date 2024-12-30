@@ -1,10 +1,12 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 
 use rand::Rng;
 use std::ops::Range;
 
 use crate::{
-    asset_loader::SceneAssets, moviment::{Acceleration, MovingObjectBundle, Velocity}, schedule::InGameSet
+    asset_loader::SceneAssets,
+    moviment::{Acceleration, Velocity},
+    schedule::InGameSet,
 };
 
 const VELOCITY_SCALAR: f32 = 5.0;
@@ -53,15 +55,10 @@ fn spawn_enemy(
     let velocity = random_unit_vector() * VELOCITY_SCALAR;
     let acceleration = random_unit_vector() * ACCELERATION_SCALAR;
     commands.spawn((
-        MovingObjectBundle {
-            velocity: Velocity::new(velocity),
-            acceleration: Acceleration::new(acceleration),
-            model: SceneBundle {
-                scene: scene_assets.enemy.clone(),
-                transform: Transform::from_translation(translation),
-                ..default()
-            },
-        },
         Enemy,
+        Velocity::new(velocity),
+        Acceleration::new(acceleration),
+        SceneRoot(scene_assets.enemy.clone()),
+        Transform::from_translation(translation),
     ));
 }

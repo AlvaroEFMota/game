@@ -2,10 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     asset_loader::SceneAssets,
-    moviment::{Acceleration, MovingObjectBundle, Velocity},
+    moviment::{Acceleration, Velocity},
     schedule::InGameSet,
 };
-
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 const STARTING_VELOCITY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 const PLAYER_SPEED: f32 = 8.0;
@@ -39,28 +38,22 @@ impl Plugin for PlayerPlugin {
 }
 
 fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
-    commands.spawn((
-        MovingObjectBundle {
-            velocity: Velocity::new(STARTING_VELOCITY),
-            acceleration: Acceleration::new(Vec3::ZERO),
-            model: SceneBundle {
-                scene: scene_assets.player.clone(),
-                transform: Transform::from_translation(STARTING_TRANSLATION),
-                ..default()
-            },
-        },
-        Player,
-    )).with_children(|parent| {
-        parent.spawn((
-            Camera,
-            Camera3dBundle {
-                transform: Transform::from_xyz(0.0, CAMERA_DISTANCE / 7.0, CAMERA_DISTANCE)
-                .looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            }
-
-        ));
-    });
+    commands
+        .spawn((
+            Player,
+            Velocity::new(STARTING_VELOCITY),
+            Acceleration::new(Vec3::ZERO),
+            SceneRoot(scene_assets.player.clone()),
+            Transform::from_translation(STARTING_TRANSLATION),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Camera,
+                Camera3d { ..default() },
+                Transform::from_xyz(0.0, CAMERA_DISTANCE / 7.0, CAMERA_DISTANCE)
+                    .looking_at(Vec3::ZERO, Vec3::Y),
+            ));
+        });
 }
 
 fn player_movement_controls(
@@ -97,18 +90,17 @@ fn player_movement_controls(
     }
 
     if keys.pressed(KeyCode::ArrowLeft) {
-        rotation = PLAYER_ROTATION_SPEED * time.delta_seconds();
+        rotation = PLAYER_ROTATION_SPEED * time.delta_secs();
     } else if keys.pressed(KeyCode::ArrowRight) {
-        rotation = -PLAYER_ROTATION_SPEED * time.delta_seconds();
+        rotation = -PLAYER_ROTATION_SPEED * time.delta_secs();
     }
 
     direction.y = 0.0;
 
     player_transform.rotate_y(rotation);
-    let moviment = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_seconds();
+    let moviment = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_secs();
     player_transform.translation += moviment;
 }
-
 
 fn player_spel_controls(
     mut command: Commands,
@@ -122,18 +114,11 @@ fn player_spel_controls(
 
     if keyboard_input.pressed(KeyCode::Space) {
         command.spawn((
-            MovingObjectBundle {
-                velocity: Velocity::new(transform.forward() * 40.0),
-                acceleration: Acceleration::new(Vec3::ZERO),
-                model: SceneBundle {
-                    scene: scene_assets.spel.clone(),
-                    transform: Transform::from_translation(
-                        transform.translation + Vec3::new(0.0, 0.0, -5.0),
-                    ),
-                    ..default()
-                },
-            },
             PlayerSpel,
+            Velocity::new(transform.forward() * 40.0),
+            Acceleration::new(Vec3::ZERO),
+            SceneRoot(scene_assets.spel.clone()),
+            Transform::from_translation(transform.translation + Vec3::new(0.0, 0.0, -5.0)),
         ));
     }
 }
