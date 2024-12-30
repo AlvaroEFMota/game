@@ -11,8 +11,8 @@ impl Plugin for FloorPlugin {
 
 fn spawn_floor(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
     let floor = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane::from_size(20.0))),
-        material: materials.add(Color::DARK_GREEN.into()),
+        mesh: meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.0))),
+        material: materials.add(Color::WHITE),
         ..default()
     };
 

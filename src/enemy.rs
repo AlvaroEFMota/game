@@ -1,4 +1,5 @@
-use bevy::{ecs::system::InsertResource, prelude::*};
+use bevy::{prelude::*};
+
 use rand::Rng;
 use std::ops::Range;
 
