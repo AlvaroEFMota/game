@@ -18,7 +18,7 @@ pub struct Camera;
 pub struct Player;
 
 #[derive(Component, Debug)]
-pub struct PlayerSpel;
+pub struct PlayerSpell;
 
 pub struct PlayerPlugin;
 
@@ -60,33 +60,33 @@ fn player_movement_controls(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut player: Query<&mut Transform, With<Player>>,
-    cam: Query<&Transform, (With<Camera>, Without<Player>)>,
+    //cam: Query<&Transform, (With<Camera>, Without<Player>)>,
 ) {
     let mut rotation = 0.0;
     let Ok(mut player_transform) = player.get_single_mut() else {
         return;
     };
-    let Ok(cam_transform) = cam.get_single() else {
-        return;
-    };
+    //let Ok(cam_transform) = cam.get_single() else {
+    //    return;
+    //};
 
     let mut direction = Vec3::ZERO;
 
     //forward
     if keys.pressed(KeyCode::KeyW) {
-        direction += cam_transform.forward().as_vec3();
+        direction += player_transform.forward().as_vec3();
     }
 
     if keys.pressed(KeyCode::KeyS) {
-        direction += cam_transform.back().as_vec3();
+        direction += player_transform.back().as_vec3();
     }
 
     if keys.pressed(KeyCode::KeyA) {
-        direction += cam_transform.left().as_vec3();
+        direction += player_transform.left().as_vec3();
     }
 
     if keys.pressed(KeyCode::KeyD) {
-        direction += cam_transform.right().as_vec3();
+        direction += player_transform.right().as_vec3();
     }
 
     if keys.pressed(KeyCode::ArrowLeft) {
@@ -114,7 +114,7 @@ fn player_spel_controls(
 
     if keyboard_input.pressed(KeyCode::Space) {
         command.spawn((
-            PlayerSpel,
+            PlayerSpell,
             Velocity::new(transform.forward() * 40.0),
             Acceleration::new(Vec3::ZERO),
             SceneRoot(scene_assets.spel.clone()),

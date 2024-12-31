@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::schedule::InGameSet;
+use crate::{enemy::Enemy, player::PlayerSpell, schedule::InGameSet};
 
 const DESPAWN_DISTANCE: f32 = 120.0;
 
@@ -15,11 +15,15 @@ impl Plugin for DespawnPlugin {
     }
 }
 
-fn despawn_fay_away_entityes(mut commands: Commands, query: Query<(Entity, &GlobalTransform)>) {
+fn despawn_fay_away_entityes(
+    mut commands: Commands,
+    query: Query<(Entity, &GlobalTransform), Or<(With<Enemy>, With<PlayerSpell>)>>,
+) {
     for (entity, transform) in query.iter() {
         let distance = transform.translation().distance(Vec3::ZERO);
 
         if distance > DESPAWN_DISTANCE {
+            //commands.entity(entity).despawn_recursive();
             commands.entity(entity).despawn();
         }
     }
