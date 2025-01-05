@@ -1,11 +1,12 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 use rand::Rng;
 use std::ops::Range;
 
 use crate::{
     asset_loader::SceneAssets,
-    moviment::{Acceleration, Velocity},
+    //moviment::{Acceleration, Velocity},
     schedule::InGameSet,
 };
 
@@ -47,7 +48,7 @@ fn spawn_enemy(
     let mut rng = rand::thread_rng();
     let translation = Vec3::new(
         rng.gen_range(SPAWN_RANGE_X),
-        0.0,
+        2.0,
         rng.gen_range(SPAWN_RANGE_Z),
     );
     let mut random_unit_vector =
@@ -56,8 +57,13 @@ fn spawn_enemy(
     let acceleration = random_unit_vector() * ACCELERATION_SCALAR;
     commands.spawn((
         Enemy,
-        Velocity::new(velocity),
-        Acceleration::new(acceleration),
+        Collider::ball(0.5),
+        RigidBody::Dynamic,
+        LockedAxes::ROTATION_LOCKED,
+        Velocity {
+            linvel: velocity,
+            angvel: Vec3::ZERO,
+        },
         SceneRoot(scene_assets.enemy.clone()),
         Transform::from_translation(translation),
     ));

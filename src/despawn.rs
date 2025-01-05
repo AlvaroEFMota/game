@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{enemy::Enemy, player::PlayerSpell, schedule::InGameSet};
 
-const DESPAWN_DISTANCE: f32 = 120.0;
+const DESPAWN_DISTANCE: f32 = 300.0;
 
 pub struct DespawnPlugin;
 

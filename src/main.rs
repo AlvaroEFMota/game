@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 mod asset_loader;
 mod debug;
@@ -6,6 +7,7 @@ mod despawn;
 mod enemy;
 mod floor;
 mod moviment;
+mod physics;
 mod player;
 mod schedule;
 
@@ -15,6 +17,7 @@ use despawn::DespawnPlugin;
 use enemy::EnemyPlugin;
 use floor::FloorPlugin;
 use moviment::MovimentPlugin;
+use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use schedule::SchedulePlugin;
 
@@ -34,5 +37,8 @@ fn main() {
         .add_plugins(DespawnPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(FloorPlugin)
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        //.add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(PhysicsPlugin)
         .run();
 }

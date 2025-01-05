@@ -19,7 +19,9 @@ impl Plugin for AssetLoaderPlugin {
 fn load_assets(mut scene_assets: ResMut<SceneAssets>, asset_server: Res<AssetServer>) {
     *scene_assets = SceneAssets {
         enemy: asset_server.load("Skeleton.glb#Scene0"),
-        player: asset_server.load("Witch.glb#Scene0"),
+        player: asset_server.load("Witch180r.glb#Scene0"),
+        //player: asset_server.load("Witch.glb#Scene0"),
+        //player: asset_server.load("Witch180rn.glb#Scene0"),
         spel: asset_server.load("Fire.glb#Scene0"),
     }
 }

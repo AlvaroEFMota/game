@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 pub struct FloorPlugin;
 
@@ -16,6 +17,7 @@ fn spawn_floor(
     let floor = (
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.0)))),
         MeshMaterial3d(materials.add(Color::WHITE)),
+        Collider::cuboid(100.0, 0.0, 100.0),
     );
 
     commands.spawn(floor);
