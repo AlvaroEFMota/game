@@ -7,14 +7,12 @@ use crate::{
     schedule::InGameSet,
 };
 const STARTING_VELOCITY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-const PLAYER_SPEED: f32 = 10.0;
-const PLAYER_ROTATION_SPEED: f32 = 4.0;
+const PLAYER_SPEED: f32 = 15.0;
+const PLAYER_ROTATION_SPEED: f32 = 3.0;
 const CAMERA_DISTANCE: f32 = 20.0;
 
 #[derive(Component)]
-pub struct LifeTime {
-    timer: Timer,
-}
+pub struct Grounded(bool);
 
 #[derive(Component, Debug)]
 pub struct Camera {
@@ -28,6 +26,11 @@ pub struct Player;
 
 #[derive(Component, Debug)]
 pub struct PlayerSpell;
+
+#[derive(Component)]
+pub struct LifeTime {
+    timer: Timer,
+}
 
 impl LifeTime {
     fn new(duration: f32) -> Self {
@@ -50,42 +53,50 @@ impl Plugin for PlayerPlugin {
                 Update,
                 player_spel_controls.in_set(InGameSet::EntityUpdates),
             )
-            .add_systems(Update, orbit_camera.in_set(InGameSet::EntityUpdates))
+            //.add_systems(Update, orbit_camera.in_set(InGameSet::EntityUpdates))
+            //.add_systems(Update, detect_ground.in_set(InGameSet::EntityUpdates))
             .add_systems(Update, lifetime_system.in_set(InGameSet::EntityUpdates));
+
         // .add_systems(Update, sync_player_camera)
     }
 }
 
 fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
-    commands.spawn((
-        Player,
-        Collider::ball(0.5),
-        RigidBody::Dynamic,
-        KinematicCharacterController {
-            up: Vec3::Y,
-            ..default()
-        },
-        Velocity {
-            linvel: STARTING_VELOCITY,
-            angvel: Vec3::ZERO,
-        },
-        SpatialBundle::from_transform(Transform::default().with_translation(Vec3::Y * 10f32)),
-        LockedAxes::ROTATION_LOCKED,
-        SceneRoot(scene_assets.player.clone()),
-        //Transform::from_translation(Vec3::new(0.0, 5.0, 0.0)),
-    ));
-    /*.with_children(|parent| {
-        parent.spawn((
-            Camera {
-                radius: CAMERA_DISTANCE,
-                angle_x: std::f32::consts::FRAC_PI_2,
-                angle_y: std::f32::consts::FRAC_PI_8,
+    commands
+        .spawn((
+            Player,
+            //RigidBody::KinematicPositionBased,
+            RigidBody::Dynamic,
+            KinematicCharacterController {
+                // Don’t allow climbing slopes larger than 45 degrees.
+                max_slope_climb_angle: 45_f32.to_radians(),
+                // Automatically slide down on slopes smaller than 30 degrees.
+                min_slope_slide_angle: 30_f32.to_radians(),
+                up: Vec3::Y,
+                //autostep: Some(CharacterAutostep {
+                //    max_height: CharacterLength::Absolute(0.5),
+                //    min_width: CharacterLength::Absolute(0.2),
+                //    include_dynamic_bodies: true,
+                //}),
+                ..default()
             },
-            Camera3d { ..default() },
-            Transform::from_xyz(0.0, CAMERA_DISTANCE / 7.0, CAMERA_DISTANCE)
-                .looking_at(Vec3::ZERO, Vec3::Y),
-        ));
-    });*/
+            Velocity {
+                linvel: STARTING_VELOCITY,
+                angvel: Vec3::ZERO,
+            },
+            Transform::from_xyz(0.0, 5.0, 0.0),
+            LockedAxes::ROTATION_LOCKED,
+            SceneRoot(scene_assets.player.clone()),
+            GravityScale(3.0),
+            Grounded(false),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Collider::cuboid(0.3, 1.0, 0.3),
+                Transform::from_xyz(0.0, 1.0, 0.0),
+            ));
+        });
+
     commands.spawn((
         Camera {
             radius: CAMERA_DISTANCE,
@@ -98,81 +109,18 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     ));
 }
 
-/*fn orbit_camera(
-    time: Res<Time>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut Camera)>,
-    mut player_query: Query<&mut Transform, (With<Player>, Without<Camera>)>,
-) {
-    let Ok((mut transform, mut orbit_camera)) = query.get_single_mut() else {
-        return;
-    };
-    let Ok(mut player_transform) = player_query.get_single_mut() else {
-        return;
-    };
-
-    if keyboard_input.pressed(KeyCode::ArrowUp) {
-        orbit_camera.angle_y =
-            (orbit_camera.angle_y + time.delta_secs()).min(std::f32::consts::FRAC_PI_2);
-        // Limitar para não passar de 90 graus
-    }
-    if keyboard_input.pressed(KeyCode::ArrowDown) {
-        orbit_camera.angle_y =
-            (orbit_camera.angle_y - time.delta_secs()).max(-std::f32::consts::FRAC_PI_2);
-        // Limitar para não passar de -90 graus
-    }
-
-    let x = orbit_camera.radius * orbit_camera.angle_x.cos() * orbit_camera.angle_y.cos();
-    let y = orbit_camera.radius * orbit_camera.angle_y.sin();
-    let z = orbit_camera.radius * orbit_camera.angle_x.sin() * orbit_camera.angle_y.cos();
-
-    transform.translation = Vec3::new(x, y, z) + player_transform.translation;
-    transform.look_at(player_transform.translation, Vec3::Y);
-}*/
-
-fn orbit_camera(
-    time: Res<Time>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut Camera)>,
-    mut player_query: Query<&mut Transform, (With<Player>, Without<Camera>)>,
-) {
-    let Ok((mut transform, mut orbit_camera)) = query.get_single_mut() else {
-        return;
-    };
-    let Ok(mut player_transform) = player_query.get_single_mut() else {
-        return;
-    };
-
-    if keyboard_input.pressed(KeyCode::ArrowUp) {
-        orbit_camera.angle_y =
-            (orbit_camera.angle_y + time.delta_secs()).min(std::f32::consts::FRAC_PI_2);
-        // Limitar para não passar de 90 graus
-    }
-    if keyboard_input.pressed(KeyCode::ArrowDown) {
-        orbit_camera.angle_y =
-            (orbit_camera.angle_y - time.delta_secs()).max(-std::f32::consts::FRAC_PI_2);
-        // Limitar para não passar de -90 graus
-    }
-
-    let x = orbit_camera.radius * orbit_camera.angle_x.cos() * orbit_camera.angle_y.cos();
-    let y = orbit_camera.radius * orbit_camera.angle_y.sin();
-    let z = orbit_camera.radius * orbit_camera.angle_x.sin() * orbit_camera.angle_y.cos();
-
-    transform.translation = Vec3::new(x, y, z) + player_transform.translation;
-    transform.look_at(player_transform.translation, Vec3::Y);
-}
-
 fn player_movement_controls(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut player: Query<(&mut Transform, &mut Velocity), With<Player>>,
-    mut cam: Query<(&Transform, &mut Camera), (With<Camera>, Without<Player>)>,
+    mut cam_query: Query<(&mut Transform, &mut Camera), (Without<Player>, With<Camera>)>,
 ) {
     let mut rotation = 0.0;
     let Ok((mut player_transform, mut player_velocity)) = player.get_single_mut() else {
         return;
     };
-    let Ok((cam_transform, mut orbit_camera)) = cam.get_single_mut() else {
+
+    let Ok((mut cam_transform, mut orbit_camera)) = cam_query.get_single_mut() else {
         return;
     };
 
@@ -196,7 +144,7 @@ fn player_movement_controls(
     }
 
     if keys.pressed(KeyCode::Space) {
-        player_velocity.linvel += Vec3::new(0.0, 1.0, 0.0);
+        player_velocity.linvel += Vec3::new(0.0, 5.0, 0.0);
     }
 
     if keys.pressed(KeyCode::ArrowLeft) {
@@ -206,11 +154,28 @@ fn player_movement_controls(
     }
 
     direction.y = 0.0;
-
     player_transform.rotate_y(rotation);
     orbit_camera.angle_x -= rotation;
     let moviment = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_secs();
     player_transform.translation += moviment;
+
+    if keys.pressed(KeyCode::ArrowUp) {
+        orbit_camera.angle_y =
+            (orbit_camera.angle_y + time.delta_secs()).min(std::f32::consts::FRAC_PI_2 * 0.9);
+        // Limitar para não passar de 90 graus
+    }
+    if keys.pressed(KeyCode::ArrowDown) {
+        orbit_camera.angle_y =
+            (orbit_camera.angle_y - time.delta_secs()).max(-std::f32::consts::FRAC_PI_2 * 0.9);
+        // Limitar para não passar de -90 graus
+    }
+
+    let x = orbit_camera.radius * orbit_camera.angle_x.cos() * orbit_camera.angle_y.cos();
+    let y = orbit_camera.radius * orbit_camera.angle_y.sin();
+    let z = orbit_camera.radius * orbit_camera.angle_x.sin() * orbit_camera.angle_y.cos();
+
+    cam_transform.translation = Vec3::new(x, y, z) + player_transform.translation;
+    cam_transform.look_at(player_transform.translation, Vec3::Y);
 }
 
 fn player_spel_controls(
@@ -259,3 +224,28 @@ fn lifetime_system(
         }
     }
 }
+
+/*fn detect_ground(
+    mut player_query: Query<(&mut Grounded, &Transform), With<Player>>,
+    collision_events: EventReader<ContactForceEvent>,
+) {
+    let Ok((mut grounded, _)) = player_query.get_single_mut() else {
+        return;
+    };
+    grounded.0 = false;
+
+    for event in collision_events.iter() {
+        if let Some(player) = [event.collider1, event.collider2]
+            .iter()
+            .find(|&&e| player_query.get(e).is_ok())
+        {
+            let normal = event.total_force.normalize();
+
+            if normal.y > 0.7 {
+                grounded.0 = true;
+                break;
+            }
+        }
+    }
+}
+*/

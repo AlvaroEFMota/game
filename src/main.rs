@@ -38,7 +38,7 @@ fn main() {
         .add_plugins(SchedulePlugin)
         .add_plugins(FloorPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        //.add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(PhysicsPlugin)
         .run();
 }
