@@ -5,7 +5,8 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_physics);
+        app.add_systems(Startup, setup_physics)
+            .add_systems(Update, display_events);
     }
 }
 
@@ -16,4 +17,17 @@ fn setup_physics(mut commands: Commands) {
         .insert(Collider::ball(1.0))
         .insert(Restitution::coefficient(0.7))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, 7.0, 0.0)));
+}
+
+fn display_events(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
+) {
+    for collision_event in collision_events.read() {
+        println!("Received collision event: {:?}", collision_event);
+    }
+
+    for contact_force_event in contact_force_events.read() {
+        println!("Received contact force event: {:?}", contact_force_event);
+    }
 }

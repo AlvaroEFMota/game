@@ -32,13 +32,13 @@ fn main() {
         .add_plugins(AssetLoaderPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(MovimentPlugin)
-        .add_plugins(DebugPlugin)
+        //.add_plugins(DebugPlugin)
         .add_plugins(EnemyPlugin)
         .add_plugins(DespawnPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(FloorPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(PhysicsPlugin)
+        //.add_plugins(PhysicsPlugin)
         .run();
 }

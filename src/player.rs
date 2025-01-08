@@ -54,7 +54,7 @@ impl Plugin for PlayerPlugin {
                 player_spel_controls.in_set(InGameSet::EntityUpdates),
             )
             //.add_systems(Update, orbit_camera.in_set(InGameSet::EntityUpdates))
-            //.add_systems(Update, detect_ground.in_set(InGameSet::EntityUpdates))
+            .add_systems(Update, detect_ground.in_set(InGameSet::EntityUpdates))
             .add_systems(Update, lifetime_system.in_set(InGameSet::EntityUpdates));
 
         // .add_systems(Update, sync_player_camera)
@@ -86,6 +86,7 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
             Transform::from_xyz(0.0, 5.0, 0.0),
             LockedAxes::ROTATION_LOCKED,
+            Restitution::coefficient(0.1),
             SceneRoot(scene_assets.player.clone()),
             GravityScale(3.0),
             Grounded(false),
@@ -94,6 +95,8 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             parent.spawn((
                 Collider::cuboid(0.3, 1.0, 0.3),
                 Transform::from_xyz(0.0, 1.0, 0.0),
+                //ActiveEvents::COLLISION_EVENTS,
+                ActiveEvents::CONTACT_FORCE_EVENTS,
             ));
         });
 
@@ -109,14 +112,43 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     ));
 }
 
+fn detect_ground(
+    mut player_query: Query<(&mut Grounded, Entity), With<Player>>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
+) {
+    if let Ok((mut grounded, player_entity)) = player_query.get_single_mut() {
+        grounded.0 = false;
+
+        for event in contact_force_events.read() {
+            //let player_is_involved =
+            //    event.collider1 == player_entity || event.collider2 == player_entity;
+            //println!("player = {}", player_is_involved);
+
+            //if player_is_involved {
+            let force_direction = event.max_force_direction;
+
+            // Check if the collision normal indicates an upward-facing surface
+            if force_direction.y > 0.5 {
+                println!("Grounded");
+                grounded.0 = true; // Player is grounded
+                break; // Exit loop once grounded
+            }
+            //}
+        }
+    } else {
+        return;
+    };
+}
+
 fn player_movement_controls(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player: Query<(&mut Transform, &mut Velocity), With<Player>>,
+    mut player: Query<(&mut Transform, &mut Velocity, &Grounded), With<Player>>,
     mut cam_query: Query<(&mut Transform, &mut Camera), (Without<Player>, With<Camera>)>,
 ) {
     let mut rotation = 0.0;
-    let Ok((mut player_transform, mut player_velocity)) = player.get_single_mut() else {
+    let Ok((mut player_transform, mut player_velocity, mut grounded)) = player.get_single_mut()
+    else {
         return;
     };
 
@@ -143,8 +175,9 @@ fn player_movement_controls(
         direction += cam_transform.right().as_vec3();
     }
 
-    if keys.pressed(KeyCode::Space) {
-        player_velocity.linvel += Vec3::new(0.0, 5.0, 0.0);
+    if keys.pressed(KeyCode::Space) && grounded.0 {
+        player_velocity.linvel.y = 15.0;
+        println!("jumpp");
     }
 
     if keys.pressed(KeyCode::ArrowLeft) {
@@ -224,28 +257,3 @@ fn lifetime_system(
         }
     }
 }
-
-/*fn detect_ground(
-    mut player_query: Query<(&mut Grounded, &Transform), With<Player>>,
-    collision_events: EventReader<ContactForceEvent>,
-) {
-    let Ok((mut grounded, _)) = player_query.get_single_mut() else {
-        return;
-    };
-    grounded.0 = false;
-
-    for event in collision_events.iter() {
-        if let Some(player) = [event.collider1, event.collider2]
-            .iter()
-            .find(|&&e| player_query.get(e).is_ok())
-        {
-            let normal = event.total_force.normalize();
-
-            if normal.y > 0.7 {
-                grounded.0 = true;
-                break;
-            }
-        }
-    }
-}
-*/
