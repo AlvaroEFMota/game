@@ -55,16 +55,26 @@ fn spawn_enemy(
         || Vec3::new(rng.gen_range(-1.0..1.0), 0., rng.gen_range(-1.0..1.0)).normalize_or_zero();
     let velocity = random_unit_vector() * VELOCITY_SCALAR;
     let acceleration = random_unit_vector() * ACCELERATION_SCALAR;
-    commands.spawn((
-        Enemy,
-        Collider::ball(0.5),
-        RigidBody::Dynamic,
-        LockedAxes::ROTATION_LOCKED,
-        Velocity {
-            linvel: velocity,
-            angvel: Vec3::ZERO,
-        },
-        SceneRoot(scene_assets.enemy.clone()),
-        Transform::from_translation(translation),
-    ));
+    commands
+        .spawn((
+            Enemy,
+            RigidBody::Dynamic,
+            LockedAxes::ROTATION_LOCKED,
+            SceneRoot(scene_assets.enemy.clone()),
+            Transform::from_translation(translation),
+            Velocity {
+                linvel: velocity,
+                angvel: Vec3::ZERO,
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Friction {
+                    coefficient: 0.,
+                    combine_rule: CoefficientCombineRule::Min,
+                },
+                Collider::cuboid(0.4, 0.7, 0.4),
+                Transform::from_xyz(0.0, 0.7, 0.0),
+            ));
+        });
 }

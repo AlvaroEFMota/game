@@ -128,7 +128,7 @@ fn detect_ground(
             let force_direction = event.max_force_direction;
 
             // Check if the collision normal indicates an upward-facing surface
-            if force_direction.y > 0.5 {
+            if force_direction.y > 0.3 {
                 println!("Grounded");
                 grounded.0 = true; // Player is grounded
                 break; // Exit loop once grounded

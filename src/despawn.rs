@@ -23,8 +23,8 @@ fn despawn_fay_away_entityes(
         let distance = transform.translation().distance(Vec3::ZERO);
 
         if distance > DESPAWN_DISTANCE {
-            //commands.entity(entity).despawn_recursive();
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn_recursive();
+            //commands.entity(entity).despawn();
         }
     }
 }

@@ -15,9 +15,10 @@ fn spawn_floor(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let floor = (
-        //Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.0)))),
+        //RigidBody::Fixed,
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.0)))),
         MeshMaterial3d(materials.add(Color::WHITE)),
-        Collider::cuboid(100.0, 1.0, 100.0),
+        Collider::cuboid(100.0, 0.1, 100.0),
         TransformBundle::from(Transform::from_xyz(0.0, -2.0, 0.0)),
     );
 
