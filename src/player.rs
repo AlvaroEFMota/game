@@ -3,6 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{
     asset_loader::SceneAssets,
+    physics::Ball,
     //moviment::{Acceleration, Velocity},
     schedule::InGameSet,
 };
@@ -12,7 +13,7 @@ const PLAYER_ROTATION_SPEED: f32 = 3.0;
 const CAMERA_DISTANCE: f32 = 20.0;
 
 #[derive(Component)]
-pub struct Grounded(bool);
+pub struct Grounded(bool, Timer);
 
 #[derive(Component, Debug)]
 pub struct Camera {
@@ -23,6 +24,9 @@ pub struct Camera {
 
 #[derive(Component, Debug)]
 pub struct Player;
+
+#[derive(Component, Debug)]
+pub struct PlayerCollider;
 
 #[derive(Component, Debug)]
 pub struct PlayerSpell;
@@ -54,8 +58,9 @@ impl Plugin for PlayerPlugin {
                 player_spel_controls.in_set(InGameSet::EntityUpdates),
             )
             //.add_systems(Update, orbit_camera.in_set(InGameSet::EntityUpdates))
-            .add_systems(Update, detect_ground.in_set(InGameSet::EntityUpdates))
-            .add_systems(Update, lifetime_system.in_set(InGameSet::EntityUpdates));
+            .add_systems(Update, detect_ground.in_set(InGameSet::BeforeInput))
+            .add_systems(Update, detect_ball.in_set(InGameSet::BeforeInput))
+            .add_systems(Update, lifetime_system.in_set(InGameSet::BeforeInput));
 
         // .add_systems(Update, sync_player_camera)
     }
@@ -88,15 +93,16 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             LockedAxes::ROTATION_LOCKED,
             Restitution::coefficient(0.1),
             SceneRoot(scene_assets.player.clone()),
+            //SceneRoot(scene_assets.fox.clone()),
             GravityScale(3.0),
-            Grounded(false),
+            Grounded(false, Timer::from_seconds(0.1, TimerMode::Repeating)),
         ))
         .with_children(|parent| {
             parent.spawn((
+                PlayerCollider,
+                ActiveEvents::CONTACT_FORCE_EVENTS, // It needs to be together with Collider
                 Collider::cuboid(0.3, 1.0, 0.3),
                 Transform::from_xyz(0.0, 1.0, 0.0),
-                //ActiveEvents::COLLISION_EVENTS,
-                ActiveEvents::CONTACT_FORCE_EVENTS,
             ));
         });
 
@@ -112,26 +118,72 @@ fn spawn_player(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     ));
 }
 
-fn detect_ground(
-    mut player_query: Query<(&mut Grounded, Entity), With<Player>>,
+//fn run_player_animation(player_query:)
+//
+fn detect_ball(
+    mut player_collider_query: Query<Entity, With<PlayerCollider>>,
+    mut ball_query: Query<Entity, With<Ball>>,
     mut contact_force_events: EventReader<ContactForceEvent>,
 ) {
-    if let Ok((mut grounded, player_entity)) = player_query.get_single_mut() {
-        grounded.0 = false;
+    if let Ok(ball_entity) = ball_query.get_single() {
+        let Ok(entity) = player_collider_query.get_single() else {
+            return;
+        };
 
         for event in contact_force_events.read() {
-            //let player_is_involved =
-            //    event.collider1 == player_entity || event.collider2 == player_entity;
-            //println!("player = {}", player_is_involved);
+            let player_and_ball_involved = (event.collider1.eq(&entity)
+                || event.collider2.eq(&entity))
+                && (event.collider1.eq(&ball_entity) || event.collider2.eq(&ball_entity));
 
-            //if player_is_involved {
-            let force_direction = event.max_force_direction;
+            //println!("player and ball collided {:?}", player_and_ball_involved);
+            if player_and_ball_involved {
+                //println!(
+                //    "player collider = {:?}, ball_collider = {:?}, collider1 = {:?}, collider2 = {:?}",
+                //    entity, ball_entity, event.collider1, event.collider2
+                //);
+                //println!("event = {:?}", event);
+                let force_direction = event.max_force_direction.normalize();
+                println!("force direction {:?}", force_direction);
+            }
+            //}
+        }
+    } else {
+        return;
+    };
+}
 
-            // Check if the collision normal indicates an upward-facing surface
-            if force_direction.y > 0.3 {
-                println!("Grounded");
-                grounded.0 = true; // Player is grounded
-                break; // Exit loop once grounded
+fn detect_ground(
+    mut player_collider_query: Query<Entity, With<PlayerCollider>>,
+    mut player_query: Query<&mut Grounded, With<Player>>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
+    time: Res<Time>,
+) {
+    if let Ok(mut grounded) = player_query.get_single_mut() {
+        grounded.0 = false;
+        let Ok(entity) = player_collider_query.get_single() else {
+            return;
+        };
+
+        for event in contact_force_events.read() {
+            let player_is_involved = event.collider1.eq(&entity) || event.collider2.eq(&entity);
+
+            if player_is_involved {
+                /*
+                println!("Player collider involved {:?}", player_is_involved);
+                println!(
+                    "player collider = {:?}, collider1 = {}, collider2 = {}",
+                    entity, event.collider1, event.collider2
+                );
+                println!("event = {:?}", event);
+                */
+                let force_direction = event.max_force_direction.normalize();
+
+                // Check if the collision normal indicates an upward-facing surface
+                grounded.1.tick(time.delta());
+                if force_direction.y < 0.8 && grounded.1.finished() {
+                    grounded.0 = true; // Player is grounded
+                    break; // Exit loop once grounded
+                }
             }
             //}
         }
@@ -143,7 +195,7 @@ fn detect_ground(
 fn player_movement_controls(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player: Query<(&mut Transform, &mut Velocity, &Grounded), With<Player>>,
+    mut player: Query<(&mut Transform, &mut Velocity, &mut Grounded), With<Player>>,
     mut cam_query: Query<(&mut Transform, &mut Camera), (Without<Player>, With<Camera>)>,
 ) {
     let mut rotation = 0.0;
@@ -176,8 +228,8 @@ fn player_movement_controls(
     }
 
     if keys.pressed(KeyCode::Space) && grounded.0 {
-        player_velocity.linvel.y = 15.0;
-        println!("jumpp");
+        player_velocity.linvel.y = 12.0;
+        grounded.0 = false;
     }
 
     if keys.pressed(KeyCode::ArrowLeft) {

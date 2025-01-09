@@ -6,6 +6,7 @@ pub enum InGameSet {
     EntityUpdates,
     CollisionDetection,
     DespawnEntities,
+    BeforeInput,
 }
 
 pub struct SchedulePlugin;
@@ -16,6 +17,7 @@ impl Plugin for SchedulePlugin {
             Update,
             (
                 InGameSet::DespawnEntities,
+                InGameSet::BeforeInput,
                 InGameSet::UserInput,
                 InGameSet::EntityUpdates,
                 InGameSet::CollisionDetection,

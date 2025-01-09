@@ -12,9 +12,10 @@ use crate::{
 
 const VELOCITY_SCALAR: f32 = 5.0;
 const ACCELERATION_SCALAR: f32 = 1.0;
-const SPAWN_RANGE_X: Range<f32> = -25.0..25.0;
-const SPAWN_RANGE_Z: Range<f32> = 0.0..25.0;
-const SPAWN_TIME_SECONDS: f32 = 3.0;
+const SPAWN_RANGE_X: Range<f32> = -3.0..3.0;
+const SPAWN_RANGE_Z: Range<f32> = -3.0..3.0;
+//const SPAWN_TIME_SECONDS: f32 = 3.0;
+const SPAWN_TIME_SECONDS: f32 = 0.1;
 
 #[derive(Component, Debug)]
 pub struct Enemy;
@@ -59,7 +60,7 @@ fn spawn_enemy(
         .spawn((
             Enemy,
             RigidBody::Dynamic,
-            LockedAxes::ROTATION_LOCKED,
+            //LockedAxes::ROTATION_LOCKED,
             SceneRoot(scene_assets.enemy.clone()),
             Transform::from_translation(translation),
             Velocity {
@@ -70,7 +71,7 @@ fn spawn_enemy(
         .with_children(|parent| {
             parent.spawn((
                 Friction {
-                    coefficient: 0.,
+                    coefficient: 0.01,
                     combine_rule: CoefficientCombineRule::Min,
                 },
                 Collider::cuboid(0.4, 0.7, 0.4),
